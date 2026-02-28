@@ -1,16 +1,17 @@
 (function() {
-    // MODIFICĂ AICI: Pune URL-ul Webhook-ului tău din N8N
-    const N8N_WEBHOOK_URL = 'https://n8n.tatal-tau.com/webhook/cerb-manuka';
-    const AFFILIATE_LINK = 'https://manukashop.ro/collections/miere-de-manuka?utm_campaign=2Performant&utm_source=8dc35e78d&utm_medium=CPS&2pau=8dc35e78d&2ptt=quicklink&2ptu=9659b7651&2prp=LlmbNvLUUlScHKZpWnEELAG6jsLvzhrfbL3i3RTDmGew_rrWBAT2aQ2s_n9pB85v49nVXbryGUmEXAZdxTgGmXvXPvSmkD3B0Rjg-esUYzM&2pdlst=';
+    // We look for configuration defined in the HTML. 
+    // If not found, it uses empty strings as placeholders.
+    const N8N_WEBHOOK_URL = window.CerbConfig ? window.CerbConfig.webhookUrl : '';
+    const AFFILIATE_LINK = window.CerbConfig ? window.CerbConfig.affiliateLink : '';
 
     const styles = `
         #cerb-container { position: fixed; bottom: 20px; right: 20px; z-index: 10000; font-family: sans-serif; }
         #cerb-bubble { width: 60px; height: 60px; background: #f4b41a; border-radius: 50%; border: 3px solid #7b1fa2; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: 0.3s; }
         #cerb-bubble:hover { transform: scale(1.1); }
         #cerb-chat { display: none; width: 330px; height: 480px; background: white; border-radius: 15px; border: 1px solid #7b1fa2; flex-direction: column; overflow: hidden; position: absolute; bottom: 80px; right: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        #cerb-header { background: #7b1fa2; color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; }
+        #cerb-header { background: #7b1fa2; color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
         #cerb-messages { flex: 1; padding: 15px; overflow-y: auto; background: #fffdf5; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 10px 14px; border-radius: 10px; font-size: 14px; max-width: 85%; }
+        .msg { padding: 10px 14px; border-radius: 10px; font-size: 14px; max-width: 85%; line-height: 1.4; }
         .msg-bot { background: #eee; align-self: flex-start; color: #333; }
         .msg-user { background: #7b1fa2; color: white; align-self: flex-end; }
         .cta-button { 
@@ -19,8 +20,8 @@
             margin-top: 10px; border: 2px solid #7b1fa2; box-sizing: border-box;
             animation: pulseCerb 2s infinite;
         }
-        @keyframes pulseCerb { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-        #cerb-input-box { padding: 10px; display: flex; border-top: 1px solid #ddd; }
+        @keyframes pulseCerb { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+        #cerb-input-box { padding: 10px; display: flex; border-top: 1px solid #ddd; background: #fff; }
         #cerb-query { flex: 1; border: 1px solid #ccc; padding: 8px; border-radius: 5px; outline: none; }
         #cerb-send { background: #7b1fa2; color: white; border: none; padding: 8px 15px; margin-left: 5px; border-radius: 5px; cursor: pointer; }
     `;
@@ -31,10 +32,10 @@
 
     const html = `
         <div id="cerb-chat">
-            <div id="cerb-header"><span>🦌 Asistent Cerb</span><span id="close-cerb" style="cursor:pointer">✕</span></div>
-            <div id="cerb-messages"><div class="msg msg-bot">Salutare! Te pot ajuta să alegi mierea de Manuka potrivită?</div></div>
+            <div id="cerb-header"><span>🦌 Asistent Miere Manuka</span><span id="close-cerb" style="cursor:pointer; font-size:20px;">✕</span></div>
+            <div id="cerb-messages"><div class="msg msg-bot">Salut! Sunt asistentul tău pentru Miere de Manuka. Cum te pot ajuta astăzi?</div></div>
             <div id="cerb-input-box">
-                <input type="text" id="cerb-query" placeholder="Scrie aici...">
+                <input type="text" id="cerb-query" placeholder="Scrie aici întrebarea ta...">
                 <button id="cerb-send">➤</button>
             </div>
         </div>
@@ -60,7 +61,8 @@
 
     async function handleSend() {
         const text = input.value.trim();
-        if(!text) return;
+        if(!text || !N8N_WEBHOOK_URL) return;
+        
         addMsg(text, 'user');
         input.value = '';
 
@@ -70,10 +72,20 @@
                 headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ message: text })
             });
+            
             const data = await res.json();
-            addMsg(data.reply || "Imediat verific...", 'bot');
-            if(data.qualified) showButton();
-        } catch (e) { addMsg("Eroare conexiune N8N.", 'bot'); }
+            
+            // Adjust this based on your n8n output structure
+            const botReply = data.reply || data.output || data.message || "Imediat verific...";
+            addMsg(botReply, 'bot');
+            
+            // If n8n sends "qualified: true", show the buy button
+            if(data.qualified === true || data.showButton === true) {
+                showButton();
+            }
+        } catch (e) { 
+            addMsg("Momentan nu pot contacta serverul. Te rog încearcă mai târziu.", 'bot'); 
+        }
     }
 
     function addMsg(t, s) {
@@ -85,7 +97,7 @@
     }
 
     function showButton() {
-        if(document.querySelector('.cta-button')) return; // Nu il punem de doua ori
+        if(document.querySelector('.cta-button') || !AFFILIATE_LINK) return; 
         const a = document.createElement('a');
         a.href = AFFILIATE_LINK; a.target = "_blank"; a.className = "cta-button";
         a.innerText = "🛒 CUMPĂRĂ MIERE ORIGINALĂ";
