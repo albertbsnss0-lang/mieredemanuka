@@ -1,110 +1,209 @@
 (function() {
-    // We look for configuration defined in the HTML. 
-    // If not found, it uses empty strings as placeholders.
-    const N8N_WEBHOOK_URL = window.CerbConfig ? window.CerbConfig.webhookUrl : '';
-    const AFFILIATE_LINK = window.CerbConfig ? window.CerbConfig.affiliateLink : '';
-
-    const styles = `
-        #cerb-container { position: fixed; bottom: 20px; right: 20px; z-index: 10000; font-family: sans-serif; }
-        #cerb-bubble { width: 60px; height: 60px; background: #f4b41a; border-radius: 50%; border: 3px solid #7b1fa2; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: 0.3s; }
-        #cerb-bubble:hover { transform: scale(1.1); }
-        #cerb-chat { display: none; width: 330px; height: 480px; background: white; border-radius: 15px; border: 1px solid #7b1fa2; flex-direction: column; overflow: hidden; position: absolute; bottom: 80px; right: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-        #cerb-header { background: #7b1fa2; color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
-        #cerb-messages { flex: 1; padding: 15px; overflow-y: auto; background: #fffdf5; display: flex; flex-direction: column; gap: 10px; }
-        .msg { padding: 10px 14px; border-radius: 10px; font-size: 14px; max-width: 85%; line-height: 1.4; }
-        .msg-bot { background: #eee; align-self: flex-start; color: #333; }
-        .msg-user { background: #7b1fa2; color: white; align-self: flex-end; }
-        .cta-button { 
-            display: block; width: 100%; padding: 12px; background: #f4b41a; color: #7b1fa2; 
-            text-align: center; font-weight: bold; text-decoration: none; border-radius: 8px; 
-            margin-top: 10px; border: 2px solid #7b1fa2; box-sizing: border-box;
-            animation: pulseCerb 2s infinite;
+    // 1. Injectăm stilurile CSS direct în pagină pentru a păstra totul într-un singur fișier JS
+    const style = document.createElement('style');
+    style.innerHTML = `
+        :root {
+            --manuka-purple: #8e44ad;
+            --manuka-gold: #f39c12;
+            --manuka-bg: #fdfaf0;
+            --white: #ffffff;
         }
-        @keyframes pulseCerb { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
-        #cerb-input-box { padding: 10px; display: flex; border-top: 1px solid #ddd; background: #fff; }
-        #cerb-query { flex: 1; border: 1px solid #ccc; padding: 8px; border-radius: 5px; outline: none; }
-        #cerb-send { background: #7b1fa2; color: white; border: none; padding: 8px 15px; margin-left: 5px; border-radius: 5px; cursor: pointer; }
+
+        #manuka-chat-container {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 10000;
+            font-family: 'Montserrat', sans-serif;
+        }
+
+        .chat-trigger {
+            width: 65px;
+            height: 65px;
+            background: var(--manuka-purple);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(142, 68, 173, 0.4);
+            transition: all 0.3s ease;
+            border: 3px solid var(--white);
+        }
+
+        .chat-trigger:hover { transform: scale(1.1); }
+
+        .chat-trigger svg { color: white; width: 30px; height: 30px; }
+
+        .chat-card {
+            display: none;
+            width: 380px;
+            height: 550px;
+            background: var(--white);
+            border-radius: 20px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.15);
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.05);
+            animation: slideUp 0.4s ease-out;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chat-header {
+            background: var(--manuka-purple);
+            padding: 20px;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .bot-profile { display: flex; align-items: center; gap: 12px; }
+        .online-dot { width: 10px; height: 10px; background: #2ecc71; border-radius: 50%; border: 2px solid white; }
+
+        .chat-body {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: var(--manuka-bg);
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .msg {
+            max-width: 80%;
+            padding: 12px 16px;
+            border-radius: 15px;
+            font-size: 14px;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        .msg-bot { background: white; color: #333; align-self: flex-start; border-bottom-left-radius: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.03); }
+        .msg-user { background: var(--manuka-purple); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+
+        .chat-footer {
+            padding: 15px;
+            background: white;
+            display: flex;
+            gap: 10px;
+            border-top: 1px solid #eee;
+        }
+
+        .chat-input {
+            flex: 1;
+            border: 1px solid #e0e0e0;
+            padding: 12px 18px;
+            border-radius: 25px;
+            outline: none;
+            transition: border 0.3s;
+        }
+
+        .chat-input:focus { border-color: var(--manuka-purple); }
+
+        .send-btn {
+            background: var(--manuka-gold);
+            border: none;
+            color: white;
+            padding: 0 20px;
+            border-radius: 25px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.3s;
+        }
+
+        .send-btn:hover { opacity: 0.9; }
     `;
+    document.head.appendChild(style);
 
-    const styleSheet = document.createElement("style");
-    styleSheet.innerText = styles;
-    document.head.appendChild(styleSheet);
-
-    const html = `
-        <div id="cerb-chat">
-            <div id="cerb-header"><span>🦌 Asistent Miere Manuka</span><span id="close-cerb" style="cursor:pointer; font-size:20px;">✕</span></div>
-            <div id="cerb-messages"><div class="msg msg-bot">Salut! Sunt asistentul tău pentru Miere de Manuka. Cum te pot ajuta astăzi?</div></div>
-            <div id="cerb-input-box">
-                <input type="text" id="cerb-query" placeholder="Scrie aici întrebarea ta...">
-                <button id="cerb-send">➤</button>
+    // 2. Structura HTML a widget-ului
+    const root = document.getElementById('manuka-chat-root');
+    root.innerHTML = `
+        <div id="manuka-chat-container">
+            <div id="chat-card" class="chat-card">
+                <div class="chat-header">
+                    <div class="bot-profile">
+                        <div class="online-dot"></div>
+                        <div>
+                            <div style="font-weight:600; font-size:15px;">Asistent Miere de Manuka</div>
+                            <div style="font-size:11px; opacity:0.8;">Consultant Online</div>
+                        </div>
+                    </div>
+                    <span id="close-chat" style="cursor:pointer; font-size:24px;">&times;</span>
+                </div>
+                <div id="chat-body" class="chat-body">
+                    <div class="msg msg-bot">Bună! Sunt aici să te ajut să alegi mierea de Manuka potrivită nevoilor tale. Ce întrebare ai?</div>
+                </div>
+                <div class="chat-footer">
+                    <input type="text" id="chat-input" class="chat-input" placeholder="Scrie mesajul tău...">
+                    <button id="send-btn" class="send-btn">Trimite</button>
+                </div>
+            </div>
+            <div id="chat-trigger" class="chat-trigger">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
             </div>
         </div>
-        <div id="cerb-bubble">
-            <svg width="30" height="30" viewBox="0 0 24 24" fill="#7b1fa2"><path d="M12,2C12,2 10,4 7,4C4,4 2,6 2,9C2,12 5,13 5,13V19L12,22L19,19V13C19,13 22,12 22,9C22,6 20,4 17,4C14,4 12,2 12,2M12,6C13.1,6 14,6.9 14,8C14,9.1 13.1,10 12,10C10.9,10 10,9.1 10,8C10,6.9 10.9,6 12,6Z"/></svg>
-        </div>
     `;
 
-    const container = document.createElement('div');
-    container.id = 'cerb-container';
-    container.innerHTML = html;
-    document.body.appendChild(container);
+    // 3. Logica de funcționare
+    const WEBHOOK_URL = 'https://n8n.srv1241815.hstgr.cloud/webhook/y56eeu67e6e7564w4w';
+    const trigger = document.getElementById('chat-trigger');
+    const card = document.getElementById('chat-card');
+    const closeBtn = document.getElementById('close-chat');
+    const input = document.getElementById('chat-input');
+    const sendBtn = document.getElementById('send-btn');
+    const body = document.getElementById('chat-body');
 
-    const bubble = document.getElementById('cerb-bubble');
-    const chat = document.getElementById('cerb-chat');
-    const close = document.getElementById('close-cerb');
-    const input = document.getElementById('cerb-query');
-    const send = document.getElementById('cerb-send');
-    const messages = document.getElementById('cerb-messages');
+    trigger.onclick = () => {
+        card.style.display = 'flex';
+        trigger.style.display = 'none';
+    };
 
-    bubble.onclick = () => chat.style.display = (chat.style.display === 'flex' ? 'none' : 'flex');
-    close.onclick = () => chat.style.display = 'none';
+    closeBtn.onclick = () => {
+        card.style.display = 'none';
+        trigger.style.display = 'flex';
+    };
 
     async function handleSend() {
         const text = input.value.trim();
-        if(!text || !N8N_WEBHOOK_URL) return;
-        
-        addMsg(text, 'user');
+        if(!text) return;
+
+        // Adaugă mesaj utilizator
+        appendMessage(text, 'user');
         input.value = '';
 
         try {
-            const res = await fetch(N8N_WEBHOOK_URL, {
+            const response = await fetch(WEBHOOK_URL, {
                 method: 'POST',
-                headers: {'Content-Type': 'application/json'},
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ message: text })
             });
             
-            const data = await res.json();
-            
-            // Adjust this based on your n8n output structure
-            const botReply = data.reply || data.output || data.message || "Imediat verific...";
-            addMsg(botReply, 'bot');
-            
-            // If n8n sends "qualified: true", show the buy button
-            if(data.qualified === true || data.showButton === true) {
-                showButton();
-            }
-        } catch (e) { 
-            addMsg("Momentan nu pot contacta serverul. Te rog încearcă mai târziu.", 'bot'); 
+            const data = await response.json();
+            // n8n returnează de obicei răspunsul direct sau într-un câmp output
+            const reply = data.output || data.message || "Am primit mesajul tău!";
+            appendMessage(reply, 'bot');
+        } catch (e) {
+            appendMessage("Momentan nu pot procesa cererea. Te rog verifică conexiunea.", 'bot');
         }
     }
 
-    function addMsg(t, s) {
-        const d = document.createElement('div');
-        d.className = `msg msg-${s}`;
-        d.innerText = t;
-        messages.appendChild(d);
-        messages.scrollTop = messages.scrollHeight;
+    function appendMessage(text, side) {
+        const div = document.createElement('div');
+        div.className = `msg msg-${side}`;
+        div.innerText = text;
+        body.appendChild(div);
+        body.scrollTop = body.scrollHeight;
     }
 
-    function showButton() {
-        if(document.querySelector('.cta-button') || !AFFILIATE_LINK) return; 
-        const a = document.createElement('a');
-        a.href = AFFILIATE_LINK; a.target = "_blank"; a.className = "cta-button";
-        a.innerText = "🛒 CUMPĂRĂ MIERE ORIGINALĂ";
-        messages.appendChild(a);
-        messages.scrollTop = messages.scrollHeight;
-    }
-
-    send.onclick = handleSend;
+    sendBtn.onclick = handleSend;
     input.onkeypress = (e) => { if(e.key === 'Enter') handleSend(); };
+
 })();
