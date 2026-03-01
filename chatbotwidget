@@ -1,0 +1,239 @@
+(function() {
+    // 1. Inject Premium Styles - Text mai BOLD
+    const style = document.createElement('style');
+    style.innerHTML = `
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap');
+        
+        #manuka-widget-wrapper { 
+            position: fixed; 
+            bottom: 30px; 
+            right: 30px; 
+            z-index: 999999; 
+            font-family: 'Montserrat', sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: flex-end; 
+        }
+
+        /* BUTON FLOTANT BEE */
+        .chat-btn-floating { 
+            width: 75px; 
+            height: 75px; 
+            background: #f39c12; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer; 
+            box-shadow: 0 10px 30px rgba(243, 156, 18, 0.4); 
+            border: 3px solid #fff; 
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: floatBee 3s ease-in-out infinite;
+        }
+        @keyframes floatBee {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .chat-btn-floating:hover { transform: scale(1.1); background: #8e44ad; }
+
+        /* FEREASTRA CHAT MAI MARE */
+        .chat-window-container { 
+            display: none; 
+            width: 420px; 
+            height: 650px; 
+            max-height: 85vh; 
+            background: #fff; 
+            border-radius: 24px; 
+            flex-direction: column; 
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2); 
+            overflow: hidden; 
+            animation: chatFadeIn 0.4s ease; 
+        }
+        @keyframes chatFadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .chat-header-manuka { 
+            background: #8e44ad; 
+            color: white; 
+            padding: 22px 25px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 5px solid #f39c12; 
+        }
+        .chat-header-manuka span { font-weight: 800; font-size: 17px; letter-spacing: 0.5px; text-transform: uppercase; }
+
+        .chat-messages-area { 
+            flex: 1; 
+            padding: 25px; 
+            overflow-y: auto; 
+            background: #fffdf5; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 20px; 
+        }
+
+        /* MESAJ BOLD */
+        .msg-bubble { 
+            max-width: 85%; 
+            padding: 18px 22px; 
+            border-radius: 18px; 
+            font-size: 15px; 
+            line-height: 1.5; 
+            font-weight: 600; /* Textul principal acum e Bold */
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06); 
+        }
+        .msg-bot { 
+            background: #fff; 
+            color: #222; 
+            align-self: flex-start; 
+            border-top-left-radius: 2px; 
+            border-left: 5px solid #f39c12; 
+        }
+        .msg-user { 
+            background: #8e44ad; 
+            color: #fff; 
+            align-self: flex-end; 
+            border-top-right-radius: 2px; 
+        }
+
+        .order-link-btn { 
+            display: block; 
+            margin-top: 15px; 
+            background: #d32f2f; 
+            color: white !important; 
+            text-decoration: none; 
+            padding: 14px; 
+            border-radius: 10px; 
+            font-weight: 800; 
+            font-size: 13px; 
+            text-align: center; 
+            text-transform: uppercase; 
+            transition: 0.3s;
+        }
+
+        .chat-footer-input { padding: 20px; display: flex; gap: 12px; background: #fff; border-top: 1px solid #eee; }
+        .chat-footer-input input { 
+            flex: 1; 
+            padding: 16px 20px; 
+            border: 2px solid #e0e0e0; 
+            border-radius: 12px; 
+            outline: none; 
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .btn-send { 
+            background: #f39c12; 
+            color: white; 
+            border: none; 
+            padding: 0 25px; 
+            border-radius: 12px; 
+            font-weight: 800; 
+            cursor: pointer; 
+            text-transform: uppercase; 
+            font-size: 13px; 
+        }
+        
+        .dot { width: 10px; height: 10px; background: #f39c12; border-radius: 50%; animation: dotWave 1.3s infinite ease-in-out; }
+    `;
+    document.head.appendChild(style);
+
+    // 2. Inject Structure
+    const root = document.getElementById('manuka-chat-root');
+    root.innerHTML = `
+        <div id="manuka-widget-wrapper">
+            <div id="chat-win-manuka" class="chat-window-container">
+                <div class="chat-header-manuka">
+                    <span>Asistent Miere de Manuka</span>
+                    <span id="close-x" style="cursor:pointer; font-size:30px;">&times;</span>
+                </div>
+                <div id="msgs-container" class="chat-messages-area"></div>
+                <div class="chat-footer-input">
+                    <input type="text" id="input-field" placeholder="Scrie mesajul t\u0103u...">
+                    <button id="btn-send-action" class="btn-send">TRIMITE</button>
+                </div>
+            </div>
+            <div id="chat-btn-manuka" class="chat-btn-floating">
+                <svg width="45" height="45" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+                    <path d="M7 12h10M7 8h10M7 16h10"/>
+                </svg>
+            </div>
+        </div>
+    `;
+
+    const msgs = document.getElementById('msgs-container');
+    const affLink = "https://manukashop.ro/collections/miere-de-manuka?utm_campaign=2Performant&utm_source=8dc35e78d&utm_medium=CPS&2pau=8dc35e78d&2ptt=quicklink&2ptu=9659b7651&2prp=FvcO6q4-jwPjlwtpeLAsjwcBnh4zjB0OKhYBenv0f3OJAiYT_KGoZS9iSu1ruAZeYzQy74uKDWaEKupW1D48AzCwglKrsSw3FEiJ0U6UBHg&2pdlst=";
+    let typingIndicator = null;
+
+    let sessionId = localStorage.getItem('manuka_chat_session');
+    if (!sessionId) {
+        sessionId = 'manuka_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('manuka_chat_session', sessionId);
+    }
+
+    function addMsg(txt, type) {
+        const d = document.createElement('div');
+        d.className = `msg-bubble msg-${type}`;
+        const triggerKeywords = ["comand\u0103", "site", "produsul", "co\u0219", "borcan", "regul\u0103", "confirm"];
+        const shouldShowButton = type === 'bot' && triggerKeywords.some(keyword => txt.toLowerCase().includes(keyword));
+
+        if (shouldShowButton) {
+            d.innerHTML = `<div>${txt}</div><a href="${affLink}" target="_blank" class="order-link-btn">VEZI PRODUSELE PE SITE</a>`;
+        } else {
+            d.innerText = txt;
+        }
+        msgs.appendChild(d);
+        msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function showTyping() {
+        typingIndicator = document.createElement('div');
+        typingIndicator.className = 'msg-bubble msg-bot';
+        typingIndicator.innerHTML = `<div style="display:flex; gap:5px;"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+        msgs.appendChild(typingIndicator);
+        msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    function hideTyping() { if (typingIndicator) { typingIndicator.remove(); typingIndicator = null; } }
+
+    addMsg("Bun\u0103! Sunt asistentul t\u0103u pentru mierea de Manuka. Cum te pot ajuta ast\u0103zi?", "bot");
+
+    document.getElementById('chat-btn-manuka').onclick = () => { 
+        document.getElementById('chat-win-manuka').style.display = 'flex'; 
+        document.getElementById('chat-btn-manuka').style.display = 'none'; 
+    };
+    document.getElementById('close-x').onclick = () => { 
+        document.getElementById('chat-win-manuka').style.display = 'none'; 
+        document.getElementById('chat-btn-manuka').style.display = 'flex'; 
+    };
+
+    async function handleChat() {
+        const input = document.getElementById('input-field');
+        const text = input.value.trim();
+        if (!text) return;
+
+        addMsg(text, 'user');
+        input.value = '';
+        showTyping();
+
+        try {
+            const res = await fetch(window.CHAT_WEBHOOK_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text, sessionId: sessionId })
+            });
+
+            const data = await res.json();
+            hideTyping();
+            const reply = Array.isArray(data) ? (data[0].output || data[0].text) : (data.output || data.text || "Mesaj primit!");
+            addMsg(reply, 'bot');
+        } catch (e) {
+            hideTyping();
+            addMsg("Eroare de conexiune. Te rug\u0103m s\u0103 încerci din nou.", "bot");
+        }
+    }
+
+    document.getElementById('btn-send-action').onclick = handleChat;
+    document.getElementById('input-field').onkeypress = (e) => { if(e.key === 'Enter') handleChat(); };
+})();
