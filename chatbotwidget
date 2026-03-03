@@ -39,8 +39,8 @@
         /* FEREASTRA CHAT MAI MARE */
         .chat-window-container { 
             display: none; 
-            width: 420px; 
-            height: 650px; 
+            width: 380px; 
+            height: 600px; 
             max-height: 85vh; 
             background: #fff; 
             border-radius: 24px; 
@@ -237,4 +237,5 @@
     document.getElementById('btn-send-action').onclick = handleChat;
     document.getElementById('input-field').onkeypress = (e) => { if(e.key === 'Enter') handleChat(); };
 })();
+
 
