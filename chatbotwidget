@@ -17,8 +17,8 @@
 
         /* BUTON FLOTANT BEE */
         .chat-btn-floating { 
-            width: 75px; 
-            height: 75px; 
+            width: 55px; 
+            height: 55px; 
             background: #f39c12; 
             border-radius: 50%; 
             display: flex; 
@@ -237,3 +237,4 @@
     document.getElementById('btn-send-action').onclick = handleChat;
     document.getElementById('input-field').onkeypress = (e) => { if(e.key === 'Enter') handleChat(); };
 })();
+
