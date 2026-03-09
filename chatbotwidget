@@ -1,5 +1,5 @@
 (function() {
-    // 1. Inject Premium Styles - Text mai BOLD
+    // 1. Inject Premium Styles
     const style = document.createElement('style');
     style.innerHTML = `
         @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&display=swap');
@@ -15,7 +15,6 @@
             align-items: flex-end; 
         }
 
-        /* BUTON FLOTANT BEE */
         .chat-btn-floating { 
             width: 55px; 
             height: 55px; 
@@ -36,7 +35,6 @@
         }
         .chat-btn-floating:hover { transform: scale(1.1); background: #8e44ad; }
 
-        /* FEREASTRA CHAT MAI MARE */
         .chat-window-container { 
             display: none; 
             width: 380px; 
@@ -72,14 +70,13 @@
             gap: 20px; 
         }
 
-        /* MESAJ BOLD */
         .msg-bubble { 
             max-width: 85%; 
             padding: 18px 22px; 
             border-radius: 18px; 
             font-size: 15px; 
             line-height: 1.5; 
-            font-weight: 600; /* Textul principal acum e Bold */
+            font-weight: 600; 
             box-shadow: 0 4px 12px rgba(0,0,0,0.06); 
         }
         .msg-bot { 
@@ -199,14 +196,19 @@
 
     addMsg("Bun\u0103! Sunt asistentul t\u0103u pentru mierea de Manuka. Cum te pot ajuta ast\u0103zi?", "bot");
 
-    document.getElementById('chat-btn-manuka').onclick = () => { 
+    // Open/Close Functions
+    const openChat = () => {
         document.getElementById('chat-win-manuka').style.display = 'flex'; 
         document.getElementById('chat-btn-manuka').style.display = 'none'; 
     };
-    document.getElementById('close-x').onclick = () => { 
+
+    const closeChat = () => {
         document.getElementById('chat-win-manuka').style.display = 'none'; 
         document.getElementById('chat-btn-manuka').style.display = 'flex'; 
     };
+
+    document.getElementById('chat-btn-manuka').onclick = openChat;
+    document.getElementById('close-x').onclick = closeChat;
 
     async function handleChat() {
         const input = document.getElementById('input-field');
@@ -236,6 +238,7 @@
 
     document.getElementById('btn-send-action').onclick = handleChat;
     document.getElementById('input-field').onkeypress = (e) => { if(e.key === 'Enter') handleChat(); };
+
+    // --- AUTO-OPEN TRIGGER ---
+    setTimeout(openChat, 1000);
 })();
-
-
